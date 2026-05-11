@@ -25,6 +25,92 @@
           <span class="bottom-nav__add-icon">+</span>
         </button>
       </nav>
+
+      <div class="modal" id="modal" aria-hidden="true">
+        <div class="modal__backdrop"></div>
+        <div class="modal__sheet" role="dialog" aria-labelledby="modal-title">
+          <div class="modal__handle"></div>
+
+          <header class="modal__header">
+            <h2 class="modal__title" id="modal-title">New transaction</h2>
+            <button class="modal__close" aria-label="Close" id="modal-close">×</button>
+          </header>
+
+          <form class="modal__form" id="transaction-form">
+            <div class="field">
+              <label class="field__label">Amount</label>
+              <div class="amount-input">
+                <span class="amount-input__prefix">S$</span>
+                <input
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  min="0"
+                  class="amount-input__field"
+                  id="field-amount"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="field-name">What was it?</label>
+              <input
+                type="text"
+                class="field__input"
+                id="field-name"
+                placeholder="Coffee, Starbucks Bugis…"
+                maxlength="60"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label class="field__label">How did it feel?</label>
+              <div class="mood-chips" id="mood-chips">
+                <button type="button" class="chip" data-mood="planned">Planned</button>
+                <button type="button" class="chip" data-mood="treat">Treat</button>
+                <button type="button" class="chip" data-mood="stress">Stress</button>
+                <button type="button" class="chip" data-mood="fomo">FOMO</button>
+                <button type="button" class="chip" data-mood="need">Need</button>
+                <button type="button" class="chip" data-mood="social">Social</button>
+                <button type="button" class="chip" data-mood="bored">Bored</button>
+              </div>
+              <input type="hidden" id="field-mood" />
+            </div>
+
+            <details class="more-details">
+              <summary class="more-details__summary">Add details</summary>
+              <div class="more-details__content">
+                <div class="field">
+                  <label class="field__label" for="field-description">Why? (optional)</label>
+                  <textarea
+                    class="field__input field__input--textarea"
+                    id="field-description"
+                    placeholder="What was going through your head?"
+                    rows="2"
+                    maxlength="200"
+                  ></textarea>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="field-location">Where? (optional)</label>
+                  <input
+                    type="text"
+                    class="field__input"
+                    id="field-location"
+                    placeholder="Bugis, home, etc."
+                    maxlength="60"
+                  />
+                </div>
+              </div>
+            </details>
+
+            <button type="submit" class="submit-btn">Log it</button>
+          </form>
+        </div>
+      </div>
+      
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
