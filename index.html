@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0f0e0c" />
+    <title>ToTally</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <h1 class="app-title">Transactions</h1>
+      </header>
+
+      <main class="app-main">
+        <div class="empty-state">
+          <p class="empty-state__primary">Nothing logged yet.</p>
+          <p class="empty-state__secondary">Tap the + below to record your first transaction.</p>
+        </div>
+      </main>
+
+      <nav class="bottom-nav">
+        <button class="bottom-nav__add" aria-label="Add transaction">
+          <span class="bottom-nav__add-icon">+</span>
+        </button>
+      </nav>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
