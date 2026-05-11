@@ -8,20 +8,26 @@ import {
 
 const modal = document.getElementById('modal');
 const modalCloseBtn = document.getElementById('modal-close');
+const modalTitle = document.getElementById('modal-title');
 const addBtn = document.querySelector('.bottom-nav__add');
 const form = document.getElementById('transaction-form');
 const moodChips = document.getElementById('mood-chips');
 const moodInput = document.getElementById('field-mood');
+const submitBtn = document.getElementById('submit-btn');
+const deleteBtn = document.getElementById('delete-btn');
 const mainEl = document.querySelector('.app-main');
 const emptyState = document.querySelector('.empty-state');
 
+let editingId = null;
+let editingTimestamp = null;
+
 const MOOD_LABELS = {
   planned: 'Planned',
+  need: 'Need',
   treat: 'Treat',
   stress: 'Stress',
-  fomo: 'FOMO',
-  need: 'Need',
   social: 'Social',
+  fomo: 'FOMO',       // legacy support for any existing data
   bored: 'Bored',
 };
 
@@ -49,6 +55,14 @@ function formatTimeAgo(isoString) {
   if (diffDay < 7) return `${diffDay}d ago`;
 
   return date.toLocaleDateString('en-SG', { month: 'short', day: 'numeric' });
+}
+
+function toDateTimeLocal(isoString) {
+  // Format ISO timestamp as YYYY-MM-DDTHH:MM in local time for datetime-local input
+  const date = new Date(isoString);
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 function escapeHtml(str) {
@@ -93,7 +107,6 @@ function createTransactionCard(transaction) {
 async function renderTransactions() {
   const transactions = await getAllTransactions();
 
-  // remove old list if present
   const oldList = document.querySelector('.tx-list');
   if (oldList) oldList.remove();
 
@@ -110,7 +123,7 @@ async function renderTransactions() {
   mainEl.appendChild(list);
 }
 
-// --- Modal open/close ---
+// --- Modal control ---
 function openModal() {
   modal.setAttribute('aria-hidden', 'false');
   setTimeout(() => {
@@ -122,15 +135,66 @@ function closeModal() {
   modal.setAttribute('aria-hidden', 'true');
   form.reset();
   moodInput.value = '';
+  editingId = null;
+  editingTimestamp = null;
   moodChips.querySelectorAll('.chip').forEach((c) => {
     c.removeAttribute('data-selected');
   });
   document.querySelector('.more-details')?.removeAttribute('open');
 }
 
-addBtn.addEventListener('click', openModal);
+function openModalForAdd() {
+  editingId = null;
+  editingTimestamp = null;
+  modalTitle.textContent = 'New transaction';
+  submitBtn.textContent = 'Log it';
+  deleteBtn.hidden = true;
+  openModal();
+}
+
+function openModalForEdit(transaction) {
+  editingId = transaction.id;
+  editingTimestamp = transaction.timestamp;
+
+  // Pre-fill fields
+  document.getElementById('field-amount').value = transaction.amount;
+  document.getElementById('field-name').value = transaction.name;
+  document.getElementById('field-description').value = transaction.description || '';
+  document.getElementById('field-location').value = transaction.location || '';
+  document.getElementById('field-datetime').value = toDateTimeLocal(transaction.timestamp);
+
+  // Mood chip
+  moodChips.querySelectorAll('.chip').forEach((c) => c.removeAttribute('data-selected'));
+  const chip = moodChips.querySelector(`[data-mood="${transaction.mood}"]`);
+  if (chip) chip.setAttribute('data-selected', 'true');
+  moodInput.value = transaction.mood;
+
+  // Auto-expand More Details if relevant fields have values
+  if (transaction.description || transaction.location) {
+    document.querySelector('.more-details').setAttribute('open', '');
+  }
+
+  // UI for edit mode
+  modalTitle.textContent = 'Edit transaction';
+  submitBtn.textContent = 'Save changes';
+  deleteBtn.hidden = false;
+
+  openModal();
+}
+
+addBtn.addEventListener('click', openModalForAdd);
 modalCloseBtn.addEventListener('click', closeModal);
 modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
+
+// --- Card tap → edit ---
+mainEl.addEventListener('click', async (e) => {
+  const card = e.target.closest('.tx-card');
+  if (!card) return;
+
+  const all = await getAllTransactions();
+  const tx = all.find((t) => t.id === card.dataset.id);
+  if (tx) openModalForEdit(tx);
+});
 
 // --- Mood chip selection ---
 moodChips.addEventListener('click', (e) => {
@@ -144,7 +208,7 @@ moodChips.addEventListener('click', (e) => {
   moodInput.value = chip.dataset.mood;
 });
 
-// --- Form submission ---
+// --- Submit (handles both add and edit) ---
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -153,17 +217,32 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  const datetimeValue = document.getElementById('field-datetime').value;
+  const timestamp = datetimeValue
+    ? new Date(datetimeValue).toISOString()
+    : editingTimestamp || new Date().toISOString();
+
   const transaction = {
-    id: crypto.randomUUID(),
+    id: editingId || crypto.randomUUID(),
     name: document.getElementById('field-name').value.trim(),
     amount: parseFloat(document.getElementById('field-amount').value),
     mood: moodInput.value,
     description: document.getElementById('field-description').value.trim() || null,
     location: document.getElementById('field-location').value.trim() || null,
-    timestamp: new Date().toISOString(),
+    timestamp,
   };
 
-  await addTransaction(transaction);
+  await addTransaction(transaction); // put = upsert; works for both add and edit
+  await renderTransactions();
+  closeModal();
+});
+
+// --- Delete ---
+deleteBtn.addEventListener('click', async () => {
+  if (!editingId) return;
+  if (!confirm('Delete this transaction?')) return;
+
+  await deleteTransaction(editingId);
   await renderTransactions();
   closeModal();
 });
@@ -171,7 +250,7 @@ form.addEventListener('submit', async (e) => {
 // --- Initial render ---
 renderTransactions();
 
-// --- Dev helpers (for testing during build) ---
+// --- Dev helpers ---
 window.totally = {
   clearAll: async () => {
     await clearAll();

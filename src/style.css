@@ -468,9 +468,18 @@ body {
   flex-direction: column;
   gap: var(--space-2);
   position: relative;
+  cursor: pointer;
   transition:
     border-color 200ms ease,
     transform 150ms ease;
+}
+
+.tx-card:hover {
+  border-color: var(--color-text-muted);
+}
+
+.tx-card:active {
+  transform: scale(0.98);
 }
 
 .tx-card__row {
@@ -482,8 +491,8 @@ body {
 
 .tx-card__name {
   font-family: var(--font-body);
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.0625rem;
+  font-weight: 600;
   color: var(--color-text-primary);
   letter-spacing: 0.01em;
   overflow: hidden;
@@ -496,7 +505,7 @@ body {
 .tx-card__amount {
   font-family: var(--font-display);
   font-style: italic;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 400;
   color: var(--color-text-primary);
   flex-shrink: 0;
@@ -549,3 +558,28 @@ body {
 .tx-card[data-mood='need']     .tx-card__mood { color: #7a9bb5; }
 .tx-card[data-mood='social']   .tx-card__mood { color: #a585c7; }
 .tx-card[data-mood='bored']    .tx-card__mood { color: #7e7770; }
+
+.delete-btn {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: #b86b5a;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.delete-btn:hover {
+  background: rgba(184, 107, 90, 0.08);
+  border-color: #b86b5a;
+}
+
+.delete-btn[hidden] {
+  display: none;
+}

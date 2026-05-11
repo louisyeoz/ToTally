@@ -82,6 +82,14 @@
               <summary class="more-details__summary">Add details</summary>
               <div class="more-details__content">
                 <div class="field">
+                  <label class="field__label" for="field-datetime">When? (optional, defaults to now)</label>
+                  <input
+                    type="datetime-local"
+                    class="field__input"
+                    id="field-datetime"
+                  />
+                </div>
+                <div class="field">
                   <label class="field__label" for="field-description">Why? (optional)</label>
                   <textarea
                     class="field__input field__input--textarea"
@@ -104,7 +112,8 @@
               </div>
             </details>
 
-            <button type="submit" class="submit-btn">Log it</button>
+            <button type="submit" class="submit-btn" id="submit-btn">Log it</button>
+            <button type="button" class="delete-btn" id="delete-btn" hidden>Delete transaction</button>
           </form>
         </div>
       </div>
