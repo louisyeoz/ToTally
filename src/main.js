@@ -17,6 +17,7 @@ const submitBtn = document.getElementById('submit-btn');
 const deleteBtn = document.getElementById('delete-btn');
 const mainEl = document.querySelector('.app-main');
 const emptyState = document.querySelector('.empty-state');
+const exportBtn = document.getElementById('export-btn');
 
 let editingId = null;
 let editingTimestamp = null;
@@ -78,8 +79,18 @@ function createTransactionCard(transaction) {
   card.dataset.id = transaction.id;
   card.dataset.mood = transaction.mood;
 
-  const descriptionHtml = transaction.description
-    ? `<p class="tx-card__description">${escapeHtml(transaction.description)}</p>`
+  const hasDescription = !!transaction.description;
+
+  const expandBtnHtml = hasDescription
+    ? `<button class="tx-card__expand" aria-label="Show description">
+         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+           <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+         </svg>
+       </button>`
+    : '';
+
+  const descriptionHtml = hasDescription
+    ? `<p class="tx-card__description" hidden>${escapeHtml(transaction.description)}</p>`
     : '';
 
   const locationHtml = transaction.location
@@ -96,6 +107,7 @@ function createTransactionCard(transaction) {
       <span class="tx-card__separator">·</span>
       <span class="tx-card__time">${formatTimeAgo(transaction.timestamp)}</span>
       ${locationHtml}
+      ${expandBtnHtml}
     </div>
     ${descriptionHtml}
   `;
@@ -122,6 +134,30 @@ async function renderTransactions() {
   transactions.forEach((tx) => list.appendChild(createTransactionCard(tx)));
   mainEl.appendChild(list);
 }
+
+// --- Export ---
+async function exportData() {
+  const all = await getAllTransactions();
+
+  if (all.length === 0) {
+    alert('Nothing to export yet.');
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(all, null, 2)], {
+    type: 'application/json',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `totally-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+exportBtn.addEventListener('click', exportData);
 
 // --- Modal control ---
 function openModal() {
@@ -186,8 +222,20 @@ addBtn.addEventListener('click', openModalForAdd);
 modalCloseBtn.addEventListener('click', closeModal);
 modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
 
-// --- Card tap → edit ---
+// --- Card tap → edit or expand ---
 mainEl.addEventListener('click', async (e) => {
+  const expandBtn = e.target.closest('.tx-card__expand');
+  if (expandBtn) {
+    e.stopPropagation();
+    const card = expandBtn.closest('.tx-card');
+    const desc = card.querySelector('.tx-card__description');
+    const expanded = !desc.hidden;
+    desc.hidden = expanded;
+    card.classList.toggle('tx-card--expanded', !expanded);
+    expandBtn.setAttribute('aria-label', expanded ? 'Show description' : 'Hide description');
+    return;
+  }
+
   const card = e.target.closest('.tx-card');
   if (!card) return;
 
