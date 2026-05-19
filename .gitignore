@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PWA generated files (dev mode)
+sw.js
+workbox-*.js
+dev-dist/
