@@ -11,13 +11,68 @@
     <div id="app">
       <header class="app-header">
         <h1 class="app-title">Transactions</h1>
-        <button class="header-action" id="export-btn" aria-label="Export data" title="Export all transactions">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <button class="header-action" id="filter-btn" aria-label="Filter and sort" data-active="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/>
+              <line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/>
+              <circle cx="14" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="20" r="2"/>
+            </svg>
+          </button>
+          <button class="header-action" id="export-btn" aria-label="Export data" title="Export all transactions">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+
+          <div class="filter-sheet" id="filter-sheet" aria-hidden="true">
+            <div class="filter-sheet__backdrop"></div>
+            <div class="filter-sheet__panel">
+              <div class="filter-sheet__handle"></div>
+              <header class="filter-sheet__header">
+                <span class="filter-sheet__title">Filter & sort</span>
+                <button class="filter-sheet__reset" id="filter-reset">Reset</button>
+              </header>
+              <div class="filter-sheet__body">
+
+                <div class="filter-section">
+                  <p class="filter-section__label">Period</p>
+                  <div class="filter-chips">
+                    <button class="chip" data-filter-group="period" data-filter-value="all">All time</button>
+                    <button class="chip" data-filter-group="period" data-filter-value="this-month">This month</button>
+                    <button class="chip" data-filter-group="period" data-filter-value="last-month">Last month</button>
+                  </div>
+                </div>
+
+                <div class="filter-section">
+                  <p class="filter-section__label">Sort by</p>
+                  <div class="filter-chips">
+                    <button class="chip" data-filter-group="sort" data-filter-value="newest">Newest first</button>
+                    <button class="chip" data-filter-group="sort" data-filter-value="oldest">Oldest first</button>
+                    <button class="chip" data-filter-group="sort" data-filter-value="highest">Highest amount</button>
+                    <button class="chip" data-filter-group="sort" data-filter-value="lowest">Lowest amount</button>
+                  </div>
+                </div>
+
+                <div class="filter-section">
+                  <p class="filter-section__label">Mood</p>
+                  <div class="filter-chips">
+                    <button class="chip" data-filter-group="mood" data-filter-value="all">All moods</button>
+                    <button class="chip" data-filter-group="mood" data-filter-value="planned">Planned</button>
+                    <button class="chip" data-filter-group="mood" data-filter-value="need">Need</button>
+                    <button class="chip" data-filter-group="mood" data-filter-value="treat">Treat</button>
+                    <button class="chip" data-filter-group="mood" data-filter-value="stress">Stress</button>
+                    <button class="chip" data-filter-group="mood" data-filter-value="social">Social</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       <main class="app-main">

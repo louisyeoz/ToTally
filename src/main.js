@@ -6,6 +6,7 @@ import {
   clearAll,
 } from './storage.js';
 
+// DOM refs
 const modal = document.getElementById('modal');
 const modalCloseBtn = document.getElementById('modal-close');
 const modalTitle = document.getElementById('modal-title');
@@ -18,18 +19,25 @@ const deleteBtn = document.getElementById('delete-btn');
 const mainEl = document.querySelector('.app-main');
 const emptyState = document.querySelector('.empty-state');
 const exportBtn = document.getElementById('export-btn');
+const filterBtn = document.getElementById('filter-btn');
+const filterSheet = document.getElementById('filter-sheet');
+const filterReset = document.getElementById('filter-reset');
 
+// State
 let editingId = null;
 let editingTimestamp = null;
 
+let activeFilters = {
+  period: 'all',
+  sort: 'newest',
+  mood: 'all',
+};
+
+const DEFAULT_FILTERS = { period: 'all', sort: 'newest', mood: 'all' };
+
 const MOOD_LABELS = {
-  planned: 'Planned',
-  need: 'Need',
-  treat: 'Treat',
-  stress: 'Stress',
-  social: 'Social',
-  fomo: 'FOMO',       // legacy support for any existing data
-  bored: 'Bored',
+  planned: 'Planned', need: 'Need', treat: 'Treat',
+  stress: 'Stress', social: 'Social', fomo: 'FOMO', bored: 'Bored',
 };
 
 // --- Helpers ---
@@ -54,12 +62,10 @@ function formatTimeAgo(isoString) {
   if (diffHour < 24) return `${diffHour}h ago`;
   if (diffDay === 1) return 'yesterday';
   if (diffDay < 7) return `${diffDay}d ago`;
-
   return date.toLocaleDateString('en-SG', { month: 'short', day: 'numeric' });
 }
 
 function toDateTimeLocal(isoString) {
-  // Format ISO timestamp as YYYY-MM-DDTHH:MM in local time for datetime-local input
   const date = new Date(isoString);
   const offset = date.getTimezoneOffset();
   const local = new Date(date.getTime() - offset * 60000);
@@ -70,6 +76,68 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function isDefaultFilters() {
+  return (
+    activeFilters.period === DEFAULT_FILTERS.period &&
+    activeFilters.sort === DEFAULT_FILTERS.sort &&
+    activeFilters.mood === DEFAULT_FILTERS.mood
+  );
+}
+
+// --- Filter logic ---
+function applyFilters(transactions) {
+  let result = [...transactions];
+  const now = new Date();
+
+  if (activeFilters.period === 'this-month') {
+    result = result.filter((tx) => {
+      const d = new Date(tx.timestamp);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+  } else if (activeFilters.period === 'last-month') {
+    const last = new Date(now.getFullYear(), now.getMonth() - 1);
+    result = result.filter((tx) => {
+      const d = new Date(tx.timestamp);
+      return d.getMonth() === last.getMonth() && d.getFullYear() === last.getFullYear();
+    });
+  }
+
+  if (activeFilters.mood !== 'all') {
+    result = result.filter((tx) => tx.mood === activeFilters.mood);
+  }
+
+  if (activeFilters.sort === 'newest') {
+    result.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  } else if (activeFilters.sort === 'oldest') {
+    result.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  } else if (activeFilters.sort === 'highest') {
+    result.sort((a, b) => b.amount - a.amount);
+  } else if (activeFilters.sort === 'lowest') {
+    result.sort((a, b) => a.amount - b.amount);
+  }
+
+  return result;
+}
+
+function syncFilterUI() {
+  // Sync chips with state
+  document.querySelectorAll('[data-filter-group]').forEach((chip) => {
+    const group = chip.dataset.filterGroup;
+    const value = chip.dataset.filterValue;
+    if (activeFilters[group] === value) {
+      chip.setAttribute('data-selected', 'true');
+    } else {
+      chip.removeAttribute('data-selected');
+    }
+  });
+
+  // Filter button active state
+  filterBtn.dataset.active = !isDefaultFilters() ? 'true' : 'false';
+
+  // Reset button enabled/disabled
+  filterReset.disabled = isDefaultFilters();
 }
 
 // --- Card creation ---
@@ -117,33 +185,52 @@ function createTransactionCard(transaction) {
 
 // --- Render ---
 async function renderTransactions() {
-  const transactions = await getAllTransactions();
+  const all = await getAllTransactions();
+  const filtered = applyFilters(all);
 
+  // Clean up previous render
   document.querySelector('.tx-list')?.remove();
   document.querySelector('.tx-summary')?.remove();
+  document.querySelector('.empty-state--filtered')?.remove();
 
-  if (transactions.length === 0) {
+  syncFilterUI();
+
+  if (all.length === 0) {
     emptyState.style.display = 'flex';
     return;
   }
 
   emptyState.style.display = 'none';
 
-  // Summary row
-  const total = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-  const count = transactions.length;
+  // Filtered empty state
+  if (filtered.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'empty-state empty-state--filtered';
+    noResults.innerHTML = `
+      <p class="empty-state__primary">No transactions found.</p>
+      <p class="empty-state__secondary">Try adjusting your filters.</p>
+    `;
+    mainEl.appendChild(noResults);
+    return;
+  }
+
+  // Summary
+  const total = filtered.reduce((sum, tx) => sum + tx.amount, 0);
+  const countText = filtered.length === all.length
+    ? `${filtered.length} ${filtered.length === 1 ? 'transaction' : 'transactions'}`
+    : `${filtered.length} of ${all.length}`;
 
   const summary = document.createElement('div');
   summary.className = 'tx-summary';
   summary.innerHTML = `
     <span class="tx-summary__total">S$${formatAmount(total)}</span>
-    <span class="tx-summary__count">${count} ${count === 1 ? 'transaction' : 'transactions'}</span>
+    <span class="tx-summary__count">${countText}</span>
   `;
 
-  // Transaction list
+  // List
   const list = document.createElement('div');
   list.className = 'tx-list';
-  transactions.forEach((tx) => list.appendChild(createTransactionCard(tx)));
+  filtered.forEach((tx) => list.appendChild(createTransactionCard(tx)));
 
   mainEl.appendChild(summary);
   mainEl.appendChild(list);
@@ -152,15 +239,9 @@ async function renderTransactions() {
 // --- Export ---
 async function exportData() {
   const all = await getAllTransactions();
+  if (all.length === 0) { alert('Nothing to export yet.'); return; }
 
-  if (all.length === 0) {
-    alert('Nothing to export yet.');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(all, null, 2)], {
-    type: 'application/json',
-  });
+  const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -173,12 +254,41 @@ async function exportData() {
 
 exportBtn.addEventListener('click', exportData);
 
-// --- Modal control ---
+// --- Filter sheet ---
+function openFilterSheet() {
+  syncFilterUI();
+  filterSheet.setAttribute('aria-hidden', 'false');
+}
+
+function closeFilterSheet() {
+  filterSheet.setAttribute('aria-hidden', 'true');
+}
+
+filterBtn.addEventListener('click', openFilterSheet);
+filterSheet.querySelector('.filter-sheet__backdrop').addEventListener('click', closeFilterSheet);
+
+filterSheet.addEventListener('click', (e) => {
+  const chip = e.target.closest('[data-filter-group]');
+  if (!chip) return;
+
+  const group = chip.dataset.filterGroup;
+  const value = chip.dataset.filterValue;
+  activeFilters[group] = value;
+
+  syncFilterUI();
+  renderTransactions();
+});
+
+filterReset.addEventListener('click', () => {
+  activeFilters = { ...DEFAULT_FILTERS };
+  syncFilterUI();
+  renderTransactions();
+});
+
+// --- Modal ---
 function openModal() {
   modal.setAttribute('aria-hidden', 'false');
-  setTimeout(() => {
-    document.getElementById('field-amount').focus();
-  }, 300);
+  setTimeout(() => document.getElementById('field-amount').focus(), 300);
 }
 
 function closeModal() {
@@ -187,9 +297,7 @@ function closeModal() {
   moodInput.value = '';
   editingId = null;
   editingTimestamp = null;
-  moodChips.querySelectorAll('.chip').forEach((c) => {
-    c.removeAttribute('data-selected');
-  });
+  moodChips.querySelectorAll('.chip').forEach((c) => c.removeAttribute('data-selected'));
   document.querySelector('.more-details')?.removeAttribute('open');
 }
 
@@ -206,25 +314,21 @@ function openModalForEdit(transaction) {
   editingId = transaction.id;
   editingTimestamp = transaction.timestamp;
 
-  // Pre-fill fields
   document.getElementById('field-amount').value = transaction.amount;
   document.getElementById('field-name').value = transaction.name;
   document.getElementById('field-description').value = transaction.description || '';
   document.getElementById('field-location').value = transaction.location || '';
   document.getElementById('field-datetime').value = toDateTimeLocal(transaction.timestamp);
 
-  // Mood chip
   moodChips.querySelectorAll('.chip').forEach((c) => c.removeAttribute('data-selected'));
   const chip = moodChips.querySelector(`[data-mood="${transaction.mood}"]`);
   if (chip) chip.setAttribute('data-selected', 'true');
   moodInput.value = transaction.mood;
 
-  // Auto-expand More Details if relevant fields have values
   if (transaction.description || transaction.location) {
     document.querySelector('.more-details').setAttribute('open', '');
   }
 
-  // UI for edit mode
   modalTitle.textContent = 'Edit transaction';
   submitBtn.textContent = 'Save changes';
   deleteBtn.hidden = false;
@@ -236,7 +340,7 @@ addBtn.addEventListener('click', openModalForAdd);
 modalCloseBtn.addEventListener('click', closeModal);
 modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
 
-// --- Card tap → edit or expand ---
+// --- Card interactions ---
 mainEl.addEventListener('click', async (e) => {
   const expandBtn = e.target.closest('.tx-card__expand');
   if (expandBtn) {
@@ -258,26 +362,19 @@ mainEl.addEventListener('click', async (e) => {
   if (tx) openModalForEdit(tx);
 });
 
-// --- Mood chip selection ---
+// --- Mood chips (add/edit form) ---
 moodChips.addEventListener('click', (e) => {
   const chip = e.target.closest('.chip');
   if (!chip) return;
-
-  moodChips.querySelectorAll('.chip').forEach((c) => {
-    c.removeAttribute('data-selected');
-  });
+  moodChips.querySelectorAll('.chip').forEach((c) => c.removeAttribute('data-selected'));
   chip.setAttribute('data-selected', 'true');
   moodInput.value = chip.dataset.mood;
 });
 
-// --- Submit (handles both add and edit) ---
+// --- Submit ---
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  if (!moodInput.value) {
-    alert('Pick a mood before logging.');
-    return;
-  }
+  if (!moodInput.value) { alert('Pick a mood before logging.'); return; }
 
   const datetimeValue = document.getElementById('field-datetime').value;
   const timestamp = datetimeValue
@@ -294,7 +391,7 @@ form.addEventListener('submit', async (e) => {
     timestamp,
   };
 
-  await addTransaction(transaction); // put = upsert; works for both add and edit
+  await addTransaction(transaction);
   await renderTransactions();
   closeModal();
 });
@@ -303,21 +400,16 @@ form.addEventListener('submit', async (e) => {
 deleteBtn.addEventListener('click', async () => {
   if (!editingId) return;
   if (!confirm('Delete this transaction?')) return;
-
   await deleteTransaction(editingId);
   await renderTransactions();
   closeModal();
 });
 
-// --- Initial render ---
+// --- Boot ---
 renderTransactions();
 
 // --- Dev helpers ---
 window.totally = {
-  clearAll: async () => {
-    await clearAll();
-    await renderTransactions();
-    console.log('Cleared.');
-  },
+  clearAll: async () => { await clearAll(); await renderTransactions(); console.log('Cleared.'); },
   getAll: getAllTransactions,
 };
