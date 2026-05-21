@@ -26,14 +26,10 @@ const filterReset = document.getElementById('filter-reset');
 // State
 let editingId = null;
 let editingTimestamp = null;
+let activeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-let activeFilters = {
-  period: 'all',
-  sort: 'newest',
-  mood: 'all',
-};
-
-const DEFAULT_FILTERS = { period: 'all', sort: 'newest', mood: 'all' };
+let activeFilters = { sort: 'newest', mood: 'all' };
+const DEFAULT_FILTERS = { sort: 'newest', mood: 'all' };
 
 const MOOD_LABELS = {
   planned: 'Planned', need: 'Need', treat: 'Treat',
@@ -78,31 +74,24 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function isCurrentMonth() {
+  const now = new Date();
+  return activeMonth.getMonth() === now.getMonth() &&
+    activeMonth.getFullYear() === now.getFullYear();
+}
+
 function isDefaultFilters() {
-  return (
-    activeFilters.period === DEFAULT_FILTERS.period &&
-    activeFilters.sort === DEFAULT_FILTERS.sort &&
-    activeFilters.mood === DEFAULT_FILTERS.mood
-  );
+  return activeFilters.sort === DEFAULT_FILTERS.sort &&
+    activeFilters.mood === DEFAULT_FILTERS.mood;
 }
 
 // --- Filter logic ---
 function applyFilters(transactions) {
-  let result = [...transactions];
-  const now = new Date();
-
-  if (activeFilters.period === 'this-month') {
-    result = result.filter((tx) => {
-      const d = new Date(tx.timestamp);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-  } else if (activeFilters.period === 'last-month') {
-    const last = new Date(now.getFullYear(), now.getMonth() - 1);
-    result = result.filter((tx) => {
-      const d = new Date(tx.timestamp);
-      return d.getMonth() === last.getMonth() && d.getFullYear() === last.getFullYear();
-    });
-  }
+  let result = transactions.filter((tx) => {
+    const d = new Date(tx.timestamp);
+    return d.getMonth() === activeMonth.getMonth() &&
+      d.getFullYear() === activeMonth.getFullYear();
+  });
 
   if (activeFilters.mood !== 'all') {
     result = result.filter((tx) => tx.mood === activeFilters.mood);
@@ -122,21 +111,13 @@ function applyFilters(transactions) {
 }
 
 function syncFilterUI() {
-  // Sync chips with state
   document.querySelectorAll('[data-filter-group]').forEach((chip) => {
     const group = chip.dataset.filterGroup;
     const value = chip.dataset.filterValue;
-    if (activeFilters[group] === value) {
-      chip.setAttribute('data-selected', 'true');
-    } else {
-      chip.removeAttribute('data-selected');
-    }
+    chip.toggleAttribute('data-selected', activeFilters[group] === value);
   });
 
-  // Filter button active state
   filterBtn.dataset.active = !isDefaultFilters() ? 'true' : 'false';
-
-  // Reset button enabled/disabled
   filterReset.disabled = isDefaultFilters();
 }
 
@@ -188,7 +169,6 @@ async function renderTransactions() {
   const all = await getAllTransactions();
   const filtered = applyFilters(all);
 
-  // Clean up previous render
   document.querySelector('.tx-list')?.remove();
   document.querySelector('.tx-summary')?.remove();
   document.querySelector('.empty-state--filtered')?.remove();
@@ -202,37 +182,78 @@ async function renderTransactions() {
 
   emptyState.style.display = 'none';
 
-  // Filtered empty state
+  // Month display
+  const monthDisplay = activeMonth.toLocaleDateString('en-SG', {
+    month: 'long', year: 'numeric',
+  });
+
+  // Count text
+  const monthTotal = all.filter((tx) => {
+    const d = new Date(tx.timestamp);
+    return d.getMonth() === activeMonth.getMonth() &&
+      d.getFullYear() === activeMonth.getFullYear();
+  }).length;
+
+  const total = filtered.reduce((sum, tx) => sum + tx.amount, 0);
+
+  const countText = filtered.length === monthTotal
+    ? `${filtered.length} ${filtered.length === 1 ? 'transaction' : 'transactions'}`
+    : `${filtered.length} of ${monthTotal}`;
+
+  // Build summary with embedded month nav
+  const summary = document.createElement('div');
+  summary.className = 'tx-summary';
+  summary.innerHTML = `
+  <span class="tx-summary__total">S$${formatAmount(total)}</span>
+  <div class="tx-summary__sub">
+    <div class="tx-summary__month-nav">
+      <button class="month-nav__btn" id="month-prev-btn" aria-label="Previous month">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M10 4l-4 4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <span class="tx-summary__month">${monthDisplay}</span>
+      <button class="month-nav__btn" id="month-next-btn" aria-label="Next month" ${isCurrentMonth() ? 'disabled' : ''}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <span class="tx-summary__separator">·</span>
+    <span class="tx-summary__count">${countText}</span>
+  </div>
+`;
+
+  // Attach month nav listeners
+  summary.querySelector('#month-prev-btn').addEventListener('click', () => {
+    activeMonth = new Date(activeMonth.getFullYear(), activeMonth.getMonth() - 1, 1);
+    renderTransactions();
+  });
+
+  summary.querySelector('#month-next-btn').addEventListener('click', () => {
+    if (!isCurrentMonth()) {
+      activeMonth = new Date(activeMonth.getFullYear(), activeMonth.getMonth() + 1, 1);
+      renderTransactions();
+    }
+  });
+
+  mainEl.appendChild(summary);
+
+  // Empty month message (only when mood filter is causing it)
   if (filtered.length === 0) {
     const noResults = document.createElement('div');
     noResults.className = 'empty-state empty-state--filtered';
     noResults.innerHTML = `
-      <p class="empty-state__primary">No transactions found.</p>
-      <p class="empty-state__secondary">Try adjusting your filters.</p>
+      <p class="empty-state__primary">${monthTotal === 0 ? `Nothing in ${monthDisplay}.` : 'No results.'}</p>
+      <p class="empty-state__secondary">${monthTotal === 0 ? 'Navigate months with the arrows above.' : 'Try adjusting your filters.'}</p>
     `;
     mainEl.appendChild(noResults);
     return;
   }
 
-  // Summary
-  const total = filtered.reduce((sum, tx) => sum + tx.amount, 0);
-  const countText = filtered.length === all.length
-    ? `${filtered.length} ${filtered.length === 1 ? 'transaction' : 'transactions'}`
-    : `${filtered.length} of ${all.length}`;
-
-  const summary = document.createElement('div');
-  summary.className = 'tx-summary';
-  summary.innerHTML = `
-    <span class="tx-summary__total">S$${formatAmount(total)}</span>
-    <span class="tx-summary__count">${countText}</span>
-  `;
-
-  // List
   const list = document.createElement('div');
   list.className = 'tx-list';
   filtered.forEach((tx) => list.appendChild(createTransactionCard(tx)));
-
-  mainEl.appendChild(summary);
   mainEl.appendChild(list);
 }
 
@@ -255,26 +276,19 @@ async function exportData() {
 exportBtn.addEventListener('click', exportData);
 
 // --- Filter sheet ---
-function openFilterSheet() {
+filterBtn.addEventListener('click', () => {
   syncFilterUI();
   filterSheet.setAttribute('aria-hidden', 'false');
-}
+});
 
-function closeFilterSheet() {
+filterSheet.querySelector('.filter-sheet__backdrop').addEventListener('click', () => {
   filterSheet.setAttribute('aria-hidden', 'true');
-}
-
-filterBtn.addEventListener('click', openFilterSheet);
-filterSheet.querySelector('.filter-sheet__backdrop').addEventListener('click', closeFilterSheet);
+});
 
 filterSheet.addEventListener('click', (e) => {
   const chip = e.target.closest('[data-filter-group]');
   if (!chip) return;
-
-  const group = chip.dataset.filterGroup;
-  const value = chip.dataset.filterValue;
-  activeFilters[group] = value;
-
+  activeFilters[chip.dataset.filterGroup] = chip.dataset.filterValue;
   syncFilterUI();
   renderTransactions();
 });
@@ -362,7 +376,7 @@ mainEl.addEventListener('click', async (e) => {
   if (tx) openModalForEdit(tx);
 });
 
-// --- Mood chips (add/edit form) ---
+// --- Mood chips ---
 moodChips.addEventListener('click', (e) => {
   const chip = e.target.closest('.chip');
   if (!chip) return;

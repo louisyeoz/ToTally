@@ -86,6 +86,7 @@ body {
   padding: var(--space-4) var(--space-6);
   padding-bottom: calc(var(--bottom-nav-height) + var(--space-6));
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 /* EMPTY STATE */
@@ -657,13 +658,12 @@ body {
   transform: scale(0.95);
 }
 
-/* SUMMARY ROW */
+/* TRANSACTION SUMMARY */
 .tx-summary {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3) 0 var(--space-4);
   margin-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
@@ -671,20 +671,42 @@ body {
 .tx-summary__total {
   font-family: var(--font-display);
   font-style: normal;
-  font-size: 1.5rem;
+  font-size: 2rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);
   font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
+  line-height: 1.1;
 }
 
-.tx-summary__count {
-  font-size: 0.75rem;
-  font-weight: 400;
+.tx-summary__sub {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
-  text-align: right;
   letter-spacing: 0.01em;
+}
+
+.tx-summary__month-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tx-summary__month {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  width: 8.5rem;
+  text-align: center;
+  user-select: none;
+}
+
+.tx-summary__separator {
+  opacity: 0.5;
 }
 
 /* HEADER ACTIONS */
@@ -820,4 +842,52 @@ body {
 /* Empty filtered state */
 .empty-state--filtered .empty-state__primary {
   font-size: 1rem;
+}
+
+/* MONTH NAV */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6) var(--space-3);
+}
+
+.month-nav__label {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  min-width: 130px;
+  text-align: center;
+  user-select: none;
+}
+
+.month-nav__btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.month-nav__btn:hover {
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+
+.month-nav__btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.month-nav__btn:disabled:hover {
+  background: transparent;
 }
