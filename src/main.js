@@ -119,8 +119,8 @@ function createTransactionCard(transaction) {
 async function renderTransactions() {
   const transactions = await getAllTransactions();
 
-  const oldList = document.querySelector('.tx-list');
-  if (oldList) oldList.remove();
+  document.querySelector('.tx-list')?.remove();
+  document.querySelector('.tx-summary')?.remove();
 
   if (transactions.length === 0) {
     emptyState.style.display = 'flex';
@@ -129,9 +129,23 @@ async function renderTransactions() {
 
   emptyState.style.display = 'none';
 
+  // Summary row
+  const total = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+  const count = transactions.length;
+
+  const summary = document.createElement('div');
+  summary.className = 'tx-summary';
+  summary.innerHTML = `
+    <span class="tx-summary__total">S$${formatAmount(total)}</span>
+    <span class="tx-summary__count">${count} ${count === 1 ? 'transaction' : 'transactions'}</span>
+  `;
+
+  // Transaction list
   const list = document.createElement('div');
   list.className = 'tx-list';
   transactions.forEach((tx) => list.appendChild(createTransactionCard(tx)));
+
+  mainEl.appendChild(summary);
   mainEl.appendChild(list);
 }
 
