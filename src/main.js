@@ -164,6 +164,32 @@ function createTransactionCard(transaction) {
   return card;
 }
 
+function generateDonutSlices(moodTotals, total) {
+  if (total === 0) return '';
+
+  const radius = 80;
+  const circumference = 2 * Math.PI * radius;
+
+  const sorted = Object.entries(moodTotals)
+    .filter(([, amount]) => amount > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  let offset = 0;
+  return sorted.map(([mood, amount]) => {
+    const sliceLength = (amount / total) * circumference;
+    const slice = `
+      <circle
+        class="tx-summary__donut-slice tx-summary__donut-slice--${mood}"
+        cx="100" cy="100" r="${radius}"
+        stroke-dasharray="${sliceLength} ${circumference}"
+        stroke-dashoffset="${-offset}"
+        transform="rotate(-90 100 100)"
+      />`;
+    offset += sliceLength;
+    return slice;
+  }).join('');
+}
+
 // --- Render ---
 async function renderTransactions() {
   const all = await getAllTransactions();
@@ -200,12 +226,17 @@ async function renderTransactions() {
     ? `${filtered.length} ${filtered.length === 1 ? 'transaction' : 'transactions'}`
     : `${filtered.length} of ${monthTotal}`;
 
-  // Build summary with embedded month nav
+// Calculate mood breakdown for donut
+  const moodTotals = {};
+  for (const tx of filtered) {
+    moodTotals[tx.mood] = (moodTotals[tx.mood] || 0) + tx.amount;
+  }
+  const donutSlices = generateDonutSlices(moodTotals, total);
+
+  // Build summary
   const summary = document.createElement('div');
   summary.className = 'tx-summary';
   summary.innerHTML = `
-  <span class="tx-summary__total">S$${formatAmount(total)}</span>
-  <div class="tx-summary__sub">
     <div class="tx-summary__month-nav">
       <button class="month-nav__btn" id="month-prev-btn" aria-label="Previous month">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -219,10 +250,20 @@ async function renderTransactions() {
         </svg>
       </button>
     </div>
-    <span class="tx-summary__separator">·</span>
-    <span class="tx-summary__count">${countText}</span>
-  </div>
-`;
+
+    <div class="tx-summary__chart">
+      <svg class="tx-summary__donut" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="tx-summary__donut-bg" cx="100" cy="100" r="80" />
+        ${donutSlices}
+      </svg>
+      <div class="tx-summary__chart-center">
+        <span class="tx-summary__total">S$${formatAmount(total)}</span>
+        <span class="tx-summary__chart-label">spent</span>
+      </div>
+    </div>
+
+    <div class="tx-summary__count">${countText}</div>
+  `;
 
   // Attach month nav listeners
   summary.querySelector('#month-prev-btn').addEventListener('click', () => {
