@@ -715,11 +715,6 @@ body {
   animation: donut-in 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tx-summary__slices {
-  mask: conic-gradient(from -90deg at 50% 50%, white 0deg, white var(--ring-progress), transparent var(--ring-progress));
-  -webkit-mask: conic-gradient(from -90deg at 50% 50%, white 0deg, white var(--ring-progress), transparent var(--ring-progress));
-  animation: ring-reveal 1400ms cubic-bezier(0, 0, 0.7, 1) 0ms forwards;
-}
 
 @keyframes donut-in {
   from { opacity: 0; transform: scale(0.92); }
@@ -736,8 +731,6 @@ body {
   fill: none;
   stroke-width: 16;
   stroke-linecap: butt;
-  stroke-dasharray: 0 var(--circumference);
-  animation: donut-draw var(--draw-duration) linear var(--draw-delay) forwards;
 }
 
 @keyframes donut-draw {

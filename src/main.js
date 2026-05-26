@@ -174,10 +174,12 @@ function generateDonutSlices(moodTotals, total) {
     .filter(([, amount]) => amount > 0)
     .sort((a, b) => b[1] - a[1]);
 
+  const gap = sorted.length > 1 ? 4 : 0;
   let offset = 0;
-  return sorted.map(([mood, amount]) => {
-    const sliceLength = (amount / total) * circumference;
-    const slice = `
+
+  const circles = sorted.map(([mood, amount]) => {
+    const sliceLength = Math.max((amount / total) * circumference - gap, 0);
+    const circle = `
       <circle
         class="tx-summary__donut-slice tx-summary__donut-slice--${mood}"
         cx="100" cy="100" r="${radius}"
@@ -185,9 +187,27 @@ function generateDonutSlices(moodTotals, total) {
         stroke-dashoffset="${-offset}"
         transform="rotate(-90 100 100)"
       />`;
-    offset += sliceLength;
-    return slice;
+    offset += sliceLength + gap;
+    return circle;
   }).join('');
+
+  // SVG mask sweeps clockwise from top using SMIL — avoids CSS coordinate mismatch
+  const maskId = `donut-mask-${Date.now()}`;
+  return `
+    <defs>
+      <mask id="${maskId}">
+        <circle cx="100" cy="100" r="${radius}"
+          stroke="white" stroke-width="20" fill="none"
+          stroke-dasharray="0 ${circumference}"
+          transform="rotate(-90 100 100)">
+          <animate attributeName="stroke-dasharray"
+            from="0 ${circumference}" to="${circumference} ${circumference}"
+            dur="1.4s" fill="freeze" calcMode="spline"
+            keyTimes="0;1" keySplines="0 0 0.3 1" />
+        </circle>
+      </mask>
+    </defs>
+    <g class="tx-summary__slices" mask="url(#${maskId})">${circles}</g>`;
 }
 
 // --- Render ---
