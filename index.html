@@ -10,7 +10,7 @@
   <body>
     <div id="app">
       <header class="app-header">
-        <h1 class="app-title">Transactions</h1>
+        <h1 class="app-title" id="app-title">Transactions</h1>
         <div class="header-actions">
           <button class="header-action" id="filter-btn" aria-label="Filter and sort" data-active="false">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -25,6 +25,13 @@
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+
+          <button class="header-action" id="add-account-btn" aria-label="Add account" title="Add account" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
           </button>
 
@@ -66,16 +73,45 @@
         </div>
       </header>
 
-      <main class="app-main">
+      <!-- Transactions page -->
+      <main class="app-main" id="tx-main">
         <div class="empty-state">
           <p class="empty-state__primary">Nothing logged yet.</p>
           <p class="empty-state__secondary">Tap the + below to record your first transaction.</p>
         </div>
       </main>
 
+      <!-- Savings page -->
+      <main class="app-main" id="savings-main" hidden>
+        <div class="sav-empty" id="savings-empty-state">
+          <p class="empty-state__primary">No accounts yet.</p>
+          <p class="empty-state__secondary">Tap the + in the header to add your first account.</p>
+        </div>
+      </main>
+
+      <!-- Tab bar -->
       <nav class="bottom-nav">
+        <button class="tab-bar__tab" data-tab="transactions" data-active="true" aria-label="Transactions">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="2" width="14" height="20" rx="2"/>
+            <line x1="9" y1="7" x2="15" y2="7"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+            <line x1="9" y1="17" x2="12" y2="17"/>
+          </svg>
+          <span class="tab-bar__label">Transactions</span>
+        </button>
+
         <button class="bottom-nav__add" aria-label="Add transaction">
           <span class="bottom-nav__add-icon">+</span>
+        </button>
+
+        <button class="tab-bar__tab" data-tab="savings" data-active="false" aria-label="Savings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="8" width="20" height="13" rx="2"/>
+            <path d="M6 8V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>
+            <circle cx="12" cy="14.5" r="1.5" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="tab-bar__label">Savings</span>
         </button>
       </nav>
 
@@ -167,6 +203,124 @@
 
             <button type="submit" class="submit-btn" id="submit-btn">Log it</button>
             <button type="button" class="delete-btn" id="delete-btn" hidden>Delete transaction</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Account modal -->
+      <div class="modal" id="account-modal" aria-hidden="true">
+        <div class="modal__backdrop"></div>
+        <div class="modal__sheet" role="dialog" aria-labelledby="account-modal-title">
+          <div class="modal__handle"></div>
+
+          <header class="modal__header">
+            <h2 class="modal__title" id="account-modal-title">New account</h2>
+            <button class="modal__close" aria-label="Close" id="account-modal-close">×</button>
+          </header>
+
+          <form class="modal__form" id="account-form">
+            <div class="field">
+              <label class="field__label" for="field-acc-name">Account name</label>
+              <input
+                type="text"
+                class="field__input"
+                id="field-acc-name"
+                placeholder="DBS Savings, Emergency Fund…"
+                maxlength="60"
+                required
+              />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Category</label>
+              <div class="mood-chips" id="category-chips">
+                <button type="button" class="chip" data-category="cash">Cash</button>
+                <button type="button" class="chip" data-category="investments">Investments</button>
+                <button type="button" class="chip" data-category="fixed">Fixed</button>
+              </div>
+              <input type="hidden" id="field-category" />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Currency</label>
+              <div class="mood-chips" id="currency-chips">
+                <button type="button" class="chip" data-currency="SGD" data-selected="true">SGD</button>
+                <button type="button" class="chip" data-currency="USD">USD</button>
+              </div>
+              <input type="hidden" id="field-currency" value="SGD" />
+            </div>
+
+            <div class="field">
+              <label class="field__label">Balance</label>
+              <div class="amount-input">
+                <span class="amount-input__prefix" id="balance-prefix">S$</span>
+                <input
+                  type="number"
+                  inputmode="decimal"
+                  step="0.01"
+                  min="0"
+                  class="amount-input__field"
+                  id="field-acc-balance"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="field" id="fx-rate-field" hidden>
+              <label class="field__label">Exchange rate (optional)</label>
+              <div class="amount-input">
+                <span class="amount-input__prefix">1 USD = S$</span>
+                <input
+                  type="number"
+                  inputmode="decimal"
+                  step="0.0001"
+                  min="0"
+                  class="amount-input__field"
+                  id="field-fx-rate"
+                  placeholder="1.34"
+                />
+              </div>
+            </div>
+
+            <details class="more-details">
+              <summary class="more-details__summary">Add details</summary>
+              <div class="more-details__content">
+                <div class="field">
+                  <label class="field__label" for="field-acc-institution">Institution (optional)</label>
+                  <input
+                    type="text"
+                    class="field__input"
+                    id="field-acc-institution"
+                    placeholder="DBS, IBKR, Moomoo…"
+                    maxlength="40"
+                  />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="field-acc-notes">Notes (optional)</label>
+                  <textarea
+                    class="field__input field__input--textarea"
+                    id="field-acc-notes"
+                    placeholder="e.g. joint account, emergency fund…"
+                    rows="2"
+                    maxlength="200"
+                  ></textarea>
+                </div>
+              </div>
+            </details>
+
+            <div class="field" id="spending-account-field" hidden>
+              <label class="sav-spending-toggle">
+                <input type="checkbox" id="field-spending-account" class="sav-spending-toggle__checkbox" />
+                <span class="sav-spending-toggle__content">
+                  <span class="sav-spending-toggle__label">Use as spending account</span>
+                  <span class="sav-spending-toggle__hint">Transactions will eventually deduct from this balance.</span>
+                </span>
+              </label>
+            </div>
+
+            <button type="submit" class="submit-btn" id="account-submit-btn">Add account</button>
+            <button type="button" class="delete-btn" id="account-delete-btn" hidden>Delete account</button>
           </form>
         </div>
       </div>

@@ -5,6 +5,7 @@ import {
   deleteTransaction,
   clearAll,
 } from './storage.js';
+import { renderSavings, openAccountModalForAdd } from './savings.js';
 
 // DOM refs
 const modal = document.getElementById('modal');
@@ -22,8 +23,10 @@ const exportBtn = document.getElementById('export-btn');
 const filterBtn = document.getElementById('filter-btn');
 const filterSheet = document.getElementById('filter-sheet');
 const filterReset = document.getElementById('filter-reset');
+const addAccountBtn = document.getElementById('add-account-btn');
 
 // State
+let activeTab = 'transactions';
 let editingId = null;
 let editingTimestamp = null;
 let activeMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -373,7 +376,7 @@ function closeModal() {
   editingId = null;
   editingTimestamp = null;
   moodChips.querySelectorAll('.chip').forEach((c) => c.removeAttribute('data-selected'));
-  document.querySelector('.more-details')?.removeAttribute('open');
+  form.querySelector('.more-details')?.removeAttribute('open');
 }
 
 function openModalForAdd() {
@@ -401,7 +404,7 @@ function openModalForEdit(transaction) {
   moodInput.value = transaction.mood;
 
   if (transaction.description || transaction.location) {
-    document.querySelector('.more-details').setAttribute('open', '');
+    form.querySelector('.more-details').setAttribute('open', '');
   }
 
   modalTitle.textContent = 'Edit transaction';
@@ -411,7 +414,8 @@ function openModalForEdit(transaction) {
   openModal();
 }
 
-addBtn.addEventListener('click', openModalForAdd);
+addBtn.addEventListener('click', () => openModalForAdd());
+addAccountBtn.addEventListener('click', () => openAccountModalForAdd());
 modalCloseBtn.addEventListener('click', closeModal);
 modal.querySelector('.modal__backdrop').addEventListener('click', closeModal);
 
@@ -480,8 +484,31 @@ deleteBtn.addEventListener('click', async () => {
   closeModal();
 });
 
+// --- Tab switching ---
+function switchTab(tab) {
+  activeTab = tab;
+
+  document.getElementById('tx-main').hidden = tab !== 'transactions';
+  document.getElementById('savings-main').hidden = tab !== 'savings';
+  document.getElementById('app-title').textContent =
+    tab === 'transactions' ? 'Transactions' : 'Savings';
+  filterBtn.hidden = tab !== 'transactions';
+  exportBtn.hidden = tab !== 'transactions';
+  addAccountBtn.hidden = tab !== 'savings';
+
+  document.querySelectorAll('.tab-bar__tab').forEach((t) => {
+    t.dataset.active = (t.dataset.tab === tab).toString();
+  });
+
+  if (tab === 'savings') renderSavings();
+}
+
 // --- Boot ---
 renderTransactions();
+
+document.querySelectorAll('.tab-bar__tab').forEach((tab) => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
 
 // --- Dev helpers ---
 window.totally = {

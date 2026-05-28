@@ -1,0 +1,264 @@
+/* ============================================================
+   TAB BAR
+   ============================================================ */
+
+.tab-bar__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 150ms ease;
+  padding: 0 var(--space-4);
+}
+
+.tab-bar__tab[data-active='true'] {
+  color: var(--color-accent);
+}
+
+.tab-bar__tab:active {
+  opacity: 0.7;
+}
+
+.tab-bar__label {
+  font-family: var(--font-body);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   SAVINGS PAGE
+   ============================================================ */
+
+.sav-empty {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-12) var(--space-4);
+  min-height: 60vh;
+  gap: var(--space-2);
+}
+
+/* Summary (donut + count) reuses .tx-summary__chart, .tx-summary__total etc. */
+.sav-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  margin-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Donut slice colours for savings categories */
+.sav-donut-slice--cash {
+  stroke: var(--mood-need);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mood-need) 55%, transparent));
+}
+
+.sav-donut-slice--investments {
+  stroke: var(--mood-planned);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mood-planned) 55%, transparent));
+}
+
+.sav-donut-slice--fixed {
+  stroke: var(--color-accent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-accent) 55%, transparent));
+}
+
+/* Section headers */
+.sav-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.sav-section__header {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  padding: var(--space-2) 0;
+}
+
+.sav-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Account cards — mirrors .tx-card pattern */
+.sav-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left-width: 3px;
+  border-radius: 14px;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition:
+    border-color 200ms ease,
+    transform 150ms ease;
+}
+
+.sav-card:hover {
+  border-color: var(--color-text-muted);
+}
+
+.sav-card:active {
+  transform: scale(0.98);
+}
+
+.sav-card[data-category='cash']        { border-left-color: var(--mood-need); }
+.sav-card[data-category='investments'] { border-left-color: var(--mood-planned); }
+.sav-card[data-category='fixed']       { border-left-color: var(--color-accent); }
+
+.sav-card__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sav-card__name {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.sav-card__balance {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sav-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.sav-card__institution {
+  display: inline-block;
+  padding: 2px 8px 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+  background: var(--color-surface-raised);
+}
+
+.sav-card__time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* USD balance — stacked two-line display */
+.sav-card__row--stacked {
+  align-items: flex-start;
+}
+
+.sav-card__balance-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.sav-card__balance-converted,
+.sav-card__balance-no-rate {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Spending account dot after name */
+.sav-card__name--spending::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  margin-left: 7px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Net worth disclaimer for missing FX rates */
+.sav-net-worth-disclaimer {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  text-align: center;
+  margin-top: calc(var(--space-2) * -1);
+}
+
+/* Spending account toggle in edit modal */
+.sav-spending-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.sav-spending-toggle__checkbox {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.sav-spending-toggle__content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sav-spending-toggle__label {
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.sav-spending-toggle__hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
