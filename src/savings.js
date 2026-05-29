@@ -149,7 +149,7 @@ function createAccountCard(account) {
 
 // --- Render ---
 export async function renderSavings() {
-  savingsMain.querySelectorAll('.sav-summary, .sav-section').forEach((el) => el.remove());
+  savingsMain.querySelectorAll('.sav-overview, .sav-allocation, .sav-section').forEach((el) => el.remove());
 
   const accounts = await getAllAccounts();
 
@@ -159,59 +159,77 @@ export async function renderSavings() {
   }
   savingsEmptyState.style.display = 'none';
 
-  // Net worth: convert USD to SGD for totalling
-  let missingRate = false;
-  const total = accounts.reduce((sum, a) => {
-    const currency = a.currency || 'SGD';
-    if (currency === 'USD') {
-      if (a.fxRate) return sum + a.balance * a.fxRate;
-      missingRate = true;
-      return sum + a.balance;
-    }
-    return sum + a.balance;
-  }, 0);
+  const sgdValue = (acc) => {
+    const currency = acc.currency || 'SGD';
+    return currency === 'USD' && acc.fxRate ? acc.balance * acc.fxRate : acc.balance;
+  };
 
+  let missingRate = false;
   const categoryTotals = { cash: 0, investments: 0, fixed: 0 };
   for (const acc of accounts) {
-    const currency = acc.currency || 'SGD';
-    const sgdVal = currency === 'USD' && acc.fxRate
-      ? acc.balance * acc.fxRate
-      : acc.balance;
-    categoryTotals[acc.category] = (categoryTotals[acc.category] || 0) + sgdVal;
+    if ((acc.currency || 'SGD') === 'USD' && !acc.fxRate) missingRate = true;
+    categoryTotals[acc.category] = (categoryTotals[acc.category] || 0) + sgdValue(acc);
+  }
+  const total = categoryTotals.cash + categoryTotals.investments + categoryTotals.fixed;
+
+  // --- Hero overview ---
+  const overview = document.createElement('div');
+  overview.className = 'sav-overview';
+  overview.innerHTML = `
+    <p class="sav-overview__label">Net worth</p>
+    <h2 class="sav-overview__total">S$${formatAmount(total)}</h2>
+    ${missingRate ? '<p class="sav-overview__disclaimer">*some USD accounts missing FX rate</p>' : ''}
+  `;
+  savingsMain.appendChild(overview);
+
+  // --- Allocation bar ---
+  if (total > 0) {
+    const cats = [
+      { key: 'cash', label: 'Cash', value: categoryTotals.cash },
+      { key: 'investments', label: 'Investments', value: categoryTotals.investments },
+      { key: 'fixed', label: 'Fixed', value: categoryTotals.fixed },
+    ].filter((c) => c.value > 0);
+
+    const segments = cats.map((c) =>
+      `<span class="sav-allocation__segment sav-allocation__segment--${c.key}" style="width: ${(c.value / total) * 100}%"></span>`
+    ).join('');
+
+    const legend = cats.map((c) =>
+      `<span class="sav-allocation__legend-item">
+        <span class="sav-allocation__dot sav-allocation__dot--${c.key}"></span>
+        ${c.label} ${Math.round((c.value / total) * 100)}%
+      </span>`
+    ).join('');
+
+    const allocation = document.createElement('div');
+    allocation.className = 'sav-allocation';
+    allocation.innerHTML = `
+      <div class="sav-allocation__bar">${segments}</div>
+      <div class="sav-allocation__legend">${legend}</div>
+    `;
+    savingsMain.appendChild(allocation);
   }
 
-  const summary = document.createElement('div');
-  summary.className = 'sav-summary';
-  summary.innerHTML = `
-    <div class="tx-summary__chart">
-      <svg class="tx-summary__donut" viewBox="0 0 200 200" aria-hidden="true">
-        <circle class="tx-summary__donut-bg" cx="100" cy="100" r="80" />
-        ${buildDonut(categoryTotals, total)}
-      </svg>
-      <div class="tx-summary__chart-center">
-        <span class="tx-summary__total">S$${formatAmount(total)}</span>
-        <span class="tx-summary__chart-label">net worth</span>
-      </div>
-    </div>
-    <div class="tx-summary__count">${accounts.length} ${accounts.length === 1 ? 'account' : 'accounts'}</div>
-    ${missingRate ? '<p class="sav-net-worth-disclaimer">*some accounts missing FX rate</p>' : ''}
-  `;
-  savingsMain.appendChild(summary);
-
+  // --- Account sections with subtotals ---
   const groups = {
-    cash:        { label: '💰 Cash & Savings',    accounts: [] },
-    investments: { label: '📈 Investments',        accounts: [] },
-    fixed:       { label: '🔒 Fixed & Long-term', accounts: [] },
+    cash:        { label: 'Cash & Savings',     accounts: [] },
+    investments: { label: 'Investments',         accounts: [] },
+    fixed:       { label: 'Fixed & Long-term',   accounts: [] },
   };
   for (const acc of accounts) {
     if (groups[acc.category]) groups[acc.category].accounts.push(acc);
   }
 
-  for (const { label, accounts: catAccounts } of Object.values(groups)) {
+  for (const [key, { label, accounts: catAccounts }] of Object.entries(groups)) {
     if (catAccounts.length === 0) continue;
     const section = document.createElement('div');
     section.className = 'sav-section';
-    section.innerHTML = `<h3 class="sav-section__header">${label}</h3>`;
+    section.innerHTML = `
+      <div class="sav-section__header-row">
+        <h3 class="sav-section__header">${label}</h3>
+        <span class="sav-section__subtotal">S$${formatAmount(categoryTotals[key])}</span>
+      </div>
+    `;
     const cards = document.createElement('div');
     cards.className = 'sav-cards';
     catAccounts.forEach((acc) => cards.appendChild(createAccountCard(acc)));

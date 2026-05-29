@@ -48,31 +48,113 @@
   gap: var(--space-2);
 }
 
-/* Summary (donut + count) reuses .tx-summary__chart, .tx-summary__total etc. */
-.sav-summary {
+/* Net worth hero */
+.sav-overview {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 10px;
+  padding: var(--space-6) 0 var(--space-4);
+}
+
+.sav-overview__label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.sav-overview__total {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-size: 2.75rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sav-overview__disclaimer {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+/* Allocation bar */
+.sav-allocation {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4) 0;
-  margin-bottom: var(--space-3);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-6);
+  margin-bottom: var(--space-2);
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Donut slice colours for savings categories */
-.sav-donut-slice--cash {
-  stroke: var(--mood-need);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mood-need) 55%, transparent));
+.sav-allocation__bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  transform-origin: left;
+  animation: sav-bar-reveal 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sav-donut-slice--investments {
-  stroke: var(--mood-planned);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mood-planned) 55%, transparent));
+@keyframes sav-bar-reveal {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
 }
 
-.sav-donut-slice--fixed {
-  stroke: var(--color-accent);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-accent) 55%, transparent));
+.sav-allocation__segment { height: 100%; }
+.sav-allocation__segment--cash        { background: var(--mood-need); }
+.sav-allocation__segment--investments { background: var(--mood-planned); }
+.sav-allocation__segment--fixed       { background: var(--color-accent); }
+
+.sav-allocation__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.sav-allocation__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sav-allocation__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sav-allocation__dot--cash        { background: var(--mood-need); }
+.sav-allocation__dot--investments { background: var(--mood-planned); }
+.sav-allocation__dot--fixed       { background: var(--color-accent); }
+
+/* Section header with subtotal */
+.sav-section__header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+}
+
+.sav-section__subtotal {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Section headers */
@@ -216,15 +298,6 @@
   margin-left: 7px;
   vertical-align: middle;
   flex-shrink: 0;
-}
-
-/* Net worth disclaimer for missing FX rates */
-.sav-net-worth-disclaimer {
-  font-size: 0.6875rem;
-  color: var(--color-text-muted);
-  letter-spacing: 0.02em;
-  text-align: center;
-  margin-top: calc(var(--space-2) * -1);
 }
 
 /* Spending account toggle in edit modal */
